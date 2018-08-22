@@ -1,0 +1,608 @@
+var ITGSM_ServiceQualifiers = Class.create();
+
+//System properties:
+//Record class
+ITGSM_ServiceQualifiers.CLBS = "cmdb_ci_service";
+//Service Classifications
+ITGSM_ServiceQualifiers.BS = "Business Service";
+ITGSM_ServiceQualifiers.SO = "Service Offering";
+ITGSM_ServiceQualifiers.TS = "Technical Service";
+ITGSM_ServiceQualifiers.SS = "Shared Service";
+//Record type
+ITGSM_ServiceQualifiers.MAN = "managing";
+ITGSM_ServiceQualifiers.OPR = "operating";
+//Relationship type used for Service Model
+ITGSM_ServiceQualifiers.SMRST = "Delivered by::Delivers";
+//Install status is Operational. The following status are operational
+//Build in Progress (5), Archived (6), Decommission in Progress (8), Operational (9), Planned Decommission (10)
+//The following status are NOT operational
+//Planned (1), Cancelled (2), Evaluation (3), Decommissioned (7)
+ITGSM_ServiceQualifiers.INSTBIP = "1,5,6,8,9,10";
+
+ITGSM_ServiceQualifiers.prototype = {
+	initialize: function(currentRecord) {
+		this.currentRecord = currentRecord;
+		this.table = currentRecord.getTableName();
+		this.baseTable = GlideDBObjectManager.get().getBase(this.table);
+		this.businessServiceOffering = currentRecord.business_service;
+		this.ITServiceOffering = currentRecord.u_it_service_offering;
+		this.businessService = "";
+		this.ITSupportOffering = "";
+		this.configurationItem = currentRecord.cmdb_ci;
+		this.recordType = ITGSM_ServiceQualifiers.MAN;
+		//Relationship type used to get business services
+		this.relTypeID = this._getRelationshipTypeID();
+		//To check for circulair relation
+		this.currentpath = "";
+		// (STRY0096519) Make it possible to assign and (automatically) subscribe the user to any business service offering.
+		this.u_show_all_bsos = (currentRecord.u_show_all_bsos) ? currentRecord.u_show_all_bsos : false;
+		if(this.table == "u_call") {
+			if (currentRecord.cmdb_ci.u_managing != "") {
+				this.ITServiceOffering = currentRecord.cmdb_ci.u_managing;
+			}
+		}
+		if((this.table == "u_call" || this.table == "incident") && this.currentRecord.contact_type != "Event") {
+			this.customer = currentRecord.u_customer;
+		}
+		if(this.table == "sc_cat_item" || this.baseTable == "sc_cat_item") {
+			this.businessService = currentRecord.u_business_service;
+			this.businessServiceOffering = currentRecord.u_business_service_offering;
+		}
+		if(this.table == "sc_task") {
+			this.businessService = currentRecord.request_item.cat_item.u_business_service;
+			this.businessServiceOffering = currentRecord.request_item.business_service;
+			this.ITServiceOffering = currentRecord.request_item.u_it_service_offering;
+			this.ITSupportOffering = currentRecord.u_it_service_offering;
+			this.recordType = ITGSM_ServiceQualifiers.OPR;
+		}
+		if(this.table == "incident_task" || this.table == "u_incident_task") {
+			this.businessServiceOffering = currentRecord.parent.business_service;
+			this.ITServiceOffering = currentRecord.parent.u_it_service_offering;
+			this.ITSupportOffering = currentRecord.u_it_service_offering;
+			this.recordType = ITGSM_ServiceQualifiers.OPR;
+		}
+		if(this.table == "problem_task") {
+			this.businessServiceOffering = currentRecord.problem.business_service;
+			this.ITServiceOffering = currentRecord.problem.u_it_service_offering;
+			this.ITSupportOffering = currentRecord.u_it_service_offering;
+			this.recordType = ITGSM_ServiceQualifiers.OPR;
+		}
+		if(this.table == "change_task") {
+			this.businessServiceOffering = currentRecord.change_request.business_service;
+			this.ITServiceOffering = currentRecord.change_request.u_it_service_offering;
+			this.ITSupportOffering = currentRecord.u_it_service_offering;
+			this.recordType = ITGSM_ServiceQualifiers.OPR;
+		}
+		if(this.table == "u_m2m_cat_supply_off") {
+			this.businessService = currentRecord.u_catalog_item.u_business_service;
+			this.ITServiceOffering = currentRecord.u_catalog_item.u_it_service_offering;
+			this.ITSupportOffering = currentRecord.u_it_support_offering;
+		}
+		if(this.table == "sc_cart_item") {
+			this.customer = currentRecord.variables.requested_for;
+			this.businessService = currentRecord.cat_item.u_business_service ? currentRecord.cat_item.u_business_service : '';
+			this.businessServiceOffering = currentRecord.variables.sh_business_service_offering;
+			this.ITServiceOffering = currentRecord.cat_item.u_it_service_offering ? currentRecord.cat_item.u_it_service_offering : '';
+			if(current.variables.sh_business_service_cat_chg != undefined){
+				this.businessService = current.variables.sh_business_service_cat_chg;
+			}
+			if(current.variables.sh_it_service_offering != undefined){
+				this.ITServiceOffering = current.variables.sh_it_service_offering;
+			}
+		}
+		if(this.table == "sc_req_item") {
+			this.customer = currentRecord.u_requested_for;
+			this.businessService = currentRecord.cat_item.u_business_service ? currentRecord.cat_item.u_business_service : '';
+		}
+		if(this.table == "u_change_category") {
+			this.businessService = currentRecord.u_business_service;
+			this.businessServiceOffering = currentRecord.u_business_service_offering;
+		}
+		
+		if(this.table == "kb_knowledge") {
+			this.businessServiceOffering = currentRecord.u_business_service_offering;
+			this.ITServiceOffering = currentRecord.u_it_service_offering;
+		}
+		
+		if(this.customer == null || this.customer == 'undefined') this.customer = "";
+			if(this.businessServiceOffering == null || this.businessServiceOffering == 'undefined') this.businessServiceOffering = "";
+			if(this.ITServiceOffering == null || this.ITServiceOffering == 'undefined') this.ITServiceOffering = "";
+			if(this.configurationItem == null || this.configurationItem == 'undefined') this.configurationItem = "";
+		},
+	
+	getBusinessServices: function() {
+		var classArr = [ITGSM_ServiceQualifiers.BS];
+		var bsArr = [];
+		if(this.businessServiceOffering != ""){
+			bsArr = this._getBusinessServices(this.businessServiceOffering, bsArr, classArr, "up", 0, 1);
+		} else if(this.ITServiceOffering != ""){
+			bsArr = this._getBusinessServices(this.ITServiceOffering, bsArr, classArr, "up", 0, 2);
+		} else {
+			var gr = new GlideRecord("cmdb_ci_service");
+			gr.addQuery("install_status", "IN", ITGSM_ServiceQualifiers.INSTBIP);
+			gr.addQuery("service_classification", ITGSM_ServiceQualifiers.BS);
+			gr.addQuery("sys_class_name", ITGSM_ServiceQualifiers.CLBS);
+			gr.query();
+			while(gr.next()) {
+				bsArr.push(gr.getUniqueValue());
+			}
+		}
+		return "sys_idIN"+bsArr.join(",");
+	},
+	
+	getServiceOfferings : function(userID) {
+		var grUser = new GlideRecord('sys_user');
+		var servicesArr = [];
+		
+		if(grUser.get(userID)) {
+			if(!grUser.company.nil()) {
+				var result_company = this._serviceSubscriptionLookUp('service_subscribe_company', 'core_company', grUser.company);
+				if(result_company != "") servicesArr.push(result_company);
+				}
+			var result_sys_user = this._serviceSubscriptionLookUp('service_subscribe_sys_user', 'sys_user', userID);
+			if(result_sys_user != "") servicesArr.push(result_sys_user);
+				var usrGrp = new GlideRecord('sys_user_grmember');
+			usrGrp.addQuery('user', userID);
+			usrGrp.query();
+			while (usrGrp.next()) {
+				var result_group = this._serviceSubscriptionLookUp('service_subscribe_sys_user_grp', 'sys_user_group', usrGrp.group);
+				if(result_group != "") servicesArr.push(result_group);
+				}
+			if(!grUser.department.nil()) {
+				var result_department = this._serviceSubscriptionLookUp('service_subscribe_department', 'cmn_department', grUser.department);
+				if(result_department != "") servicesArr.push(result_department);
+				}
+			if(!grUser.location.nil()) {
+				var result_location = this._serviceSubscriptionLookUp('service_subscribe_location', 'cmn_location', grUser.location);
+				if(result_location != "") servicesArr.push(result_location);
+				}
+		}
+		return servicesArr.join(',');
+	},
+	
+	getAllBSO : function(){
+		if(this.u_show_all_bsos && this.configurationItem == ''){
+			return "install_statusIN" + ITGSM_ServiceQualifiers.INSTBIP + "^service_classification=" +ITGSM_ServiceQualifiers.SO + "^ORservice_classification="+ ITGSM_ServiceQualifiers.TS+"^sys_class_name="+ITGSM_ServiceQualifiers.CLBS+"^sys_id!="+gs.getProperty('sh.global.executive.support.offering');
+		}else{
+			return this.getBusinessServiceOfferings();
+		}
+	},
+	
+	getBusinessServiceOfferings : function() {
+		var classArr = [ITGSM_ServiceQualifiers.SO,ITGSM_ServiceQualifiers.TS];
+		var bsArr = [];
+		
+		if(this.businessService != "") {
+			// Search in the CMDB relation table for the Business Services
+			var filterStr = "ITSMA_RUN_BR_FILTER=true";
+			filterStr += "^ITSMA_BR_VAR_type=bso";
+			filterStr += "^ITSMA_BR_VAR_bs="+this.businessService;
+			filterStr += "^ITSMA_BR_VAR_itso="+this.ITServiceOffering;
+			return filterStr;
+		} else if(this.configurationItem != "") {
+			var filterStr = "ITSMA_RUN_BR_FILTER=true";
+			filterStr += "^ITSMA_BR_VAR_type=bso";
+			filterStr += "^ITSMA_BR_VAR_ci="+this.configurationItem;
+			filterStr += "^ITSMA_BR_VAR_itso="+this.ITServiceOffering;
+			return filterStr;
+		} else if(this.ITServiceOffering != "") {
+			// Search in the CMDB relation table for the IT Service Offerings
+			bsArr = this._getBusinessServices(this.ITServiceOffering, bsArr, classArr, "up", 0, 1);
+		} else {
+			var gr = new GlideRecord("cmdb_ci_service");
+			// If a business user is selected then apply a subscription based filter.
+			// (STRY0096519) If 'Search all Business service offerings' is selected then ignore the filter
+			// making it possible to assign and (automatically) subscribe the user to any business service offering.
+			if(this.customer != "" && this.u_show_all_bsos == false){
+				var grSQ = gr.addJoinQuery("service_offering", "sys_id", "parent");
+				grSQ.addCondition("sys_id", "IN", this.getServiceOfferings(this.customer));
+				
+			}
+			gr.addQuery("install_status", "IN", ITGSM_ServiceQualifiers.INSTBIP);
+			gr.addQuery("service_classification", ITGSM_ServiceQualifiers.SO).addOrCondition("service_classification", ITGSM_ServiceQualifiers.TS);
+			gr.addQuery("sys_class_name", ITGSM_ServiceQualifiers.CLBS);
+			gr.query();
+			while(gr.next()) {
+				bsArr.push(gr.getUniqueValue());
+			}
+		}
+		return "sys_idIN"+bsArr.join(",");
+	},
+	
+	getITServiceOfferings : function() {
+		var classArr = [ITGSM_ServiceQualifiers.SS];
+		var soArr = [];
+		
+		if(this.configurationItem != "" && this.businessServiceOffering != "") {
+			var ci = this._getConfigurationItem(this.configurationItem);
+			var ciITSO = ci.getValue("u_managing");
+			var filterStr = "ITSMA_RUN_BR_FILTER=true";
+			filterStr += "^ITSMA_BR_VAR_type=itso";
+			filterStr += "^ITSMA_BR_VAR_ciITSO="+ciITSO;
+			filterStr += "^ITSMA_BR_VAR_bso="+this.businessServiceOffering;
+			return filterStr;
+		} else if(this.configurationItem != "") {
+			// Get managing IT Service Offering
+			var ci = this._getConfigurationItem(this.configurationItem);
+			if(ci && ci.getValue("u_managing") != null) {
+				soArr.push(ci.getValue("u_managing"));
+			}
+		} else if(this.businessServiceOffering != "") {
+			// Search in the CMDB relation table with the IT Service Offering
+			this.currentpath = this.businessServiceOffering;
+			soArr = this._getBusinessServices(this.businessServiceOffering, soArr, classArr, "down", 0, 1);
+
+		} else if(this.businessService != "") {
+			// Search in the CMDB relation table with the Business Service
+			this.currentpath = this.businessService;
+			soArr = this._getBusinessServices(this.businessService, soArr, classArr, "down", 0, 2);
+		} else {
+			//in this part of the structure we have no ci, no bso and no bs. 
+
+
+			// Get all Business Service Offerings
+			//this is done by taking the query and assuming it is of the type sys_idINlistOfSysIds
+			//instead of querying on the services, we should query the relations.
+			//also, this should be done using GlideAggregate to prevent duplicates
+			//working like this allows us to skip the bottom loop
+			var bsArr = this.getBusinessServiceOfferings().replace("sys_idIN", "").split(",");
+			//Start new currentpath
+
+			this.currentpath = "";
+			for(var i = 0; i < bsArr.length; i++) {
+				// Search in the CMDB relation table for the IT Service Offerings
+				this.currentpath += "," + bsArr[i];
+				soArr = this._getBusinessServices(bsArr[i], soArr, classArr, "down", 0, 1);
+			}
+		}
+		return "sys_idIN"+soArr.join(",");
+	},
+	
+	getITSupportOfferings : function() {
+		var classArr = [ITGSM_ServiceQualifiers.SS];
+		var soArr = [];
+		if(this.configurationItem != "") {
+			// Get managing IT Service Offering or operating if available on CI
+			var ci = this._getConfigurationItem(this.configurationItem);
+			if(ci) {
+				if(ci.getValue("u_operating") != null)
+					soArr.push(ci.getValue("u_operating"));
+				else
+					soArr.push(ci.getValue("u_managing"));
+			}
+		} else if(this.businessServiceOffering == "") {
+			// Get all Business Service Offerings
+			var bsArr = this.getBusinessServiceOfferings().replace("sys_idIN", "").split(",");
+			//Start new currentpath
+			this.currentpath = "";
+			for(var i = 0; i < bsArr.length; i++) {
+				// Search in the CMDB relation table for the IT Service Offerings and IT support offerings
+				this.currentpath += "," + bsArr[i];
+				soArr = this._getBusinessServices(bsArr[i], soArr, classArr, "down", 0, 2);
+			}
+		} else {
+			// Search in the CMDB relation table for the IT Service Offerings and IT support offerings
+			this.currentpath = this.businessServiceOffering;
+			soArr = this._getBusinessServices(this.businessServiceOffering, soArr, classArr, "down", 0, 2);
+		}
+		return "sys_idIN"+soArr.join(",");
+	},
+	
+	getConfigurationItems : function() {
+		var itServiceOfferings = "";
+		var filterStr = "";
+		if(this.businessServiceOffering != "") {
+			if(this.businessServiceOffering.service_classification == ITGSM_ServiceQualifiers.SO) {
+				filterStr = "ITSMA_RUN_BR_FILTER=true";
+				filterStr += "^ITSMA_BR_VAR_type=ci";
+				filterStr += "^ITSMA_BR_VAR_bso="+this.businessServiceOffering;
+			}
+		}
+		if(this.ITSupportOffering != "") {
+			itServiceOfferings = this.ITSupportOffering;
+		} else if(this.ITServiceOffering != "" && this.recordType == "managing") {
+			itServiceOfferings = this.ITServiceOffering;
+		} else {
+			if (this.businessServiceOffering == '' && this.ITServiceOffering == ''){
+				//no need to check bso's and itso's if none are provided
+				return this._allCIs()
+			} else {
+				// Get all IT Service Offerings
+				itServiceOfferings = this.getITServiceOfferings().replace("sys_idIN", "");
+				if(this.recordType == ITGSM_ServiceQualifiers.OPR)
+					itServiceOfferings += this.getITSupportOfferings().replace("sys_idIN", ",");
+			}
+		}
+		if(this.recordType == ITGSM_ServiceQualifiers.OPR)
+			filterStr += "^u_operatingIN"+itServiceOfferings+"^ORu_managingIN"+itServiceOfferings;
+		else
+			filterStr += "^u_managingIN"+itServiceOfferings;
+		return filterStr;
+	},
+	
+	changeGetSubcategoryFilter : function() {
+		var classArr = [ITGSM_ServiceQualifiers.BS];
+		var bsArr = [];
+		var queryStr = '';
+		//queryStr += "u_active=true^u_parent="+this.currentRecord.category.toString()+"^u_business_serviceISEMPTY^u_business_service_offeringISEMPTY^u_it_service_offeringISEMPTY";
+		
+		if(this.businessServiceOffering != "") {
+			queryStr += "^NQu_active=true^u_parent="+this.currentRecord.category.toString();
+			bsArr = this._getBusinessServices(this.businessServiceOffering, bsArr, classArr, "up", 0, 1);
+			queryStr +=  "^u_business_serviceIN"+bsArr.join(",");
+			queryStr += "^u_business_service_offeringISEMPTY^u_it_service_offeringISEMPTY";
+			//BSO, ITSO leeg
+			
+			queryStr += "^NQu_active=true^u_parent="+this.currentRecord.category.toString();
+			bsArr = this._getBusinessServices(this.businessServiceOffering, bsArr, classArr, "up", 0, 1);
+			queryStr +=  "^u_business_serviceIN"+bsArr.join(",");
+			queryStr +=  "^u_business_service_offering="+this.businessServiceOffering;
+			queryStr +=  "^u_it_service_offeringISEMPTY";
+			//ITSO leeg
+			
+			/*queryStr += "^NQu_active=true^u_parent="+this.currentRecord.category.toString();
+			queryStr += "^u_business_service_offeringISEMPTY";
+			queryStr +=  "^u_business_service_offering="+this.businessServiceOffering;
+			queryStr += "^u_it_service_offeringISEMPTY";
+ 			*/
+		}
+		
+		if(this.ITServiceOffering != "") {
+			//if(this.businessServiceOffering == "") {
+			queryStr += "^NQu_active=true^u_parent="+this.currentRecord.category.toString();
+			bsArr = this._getBusinessServices(this.businessServiceOffering, bsArr, classArr, "up", 0, 2);
+			queryStr +=  "^u_business_serviceIN"+bsArr.join(",");
+			queryStr += "^u_it_service_offering="+this.ITServiceOffering;
+			queryStr += "^u_business_service_offeringISEMPTY";
+			//bso leeg
+			//}
+			
+			//if(this.businessServiceOffering != "") {
+			queryStr += "^NQu_active=true^u_parent="+this.currentRecord.category.toString();
+			bsArr = this._getBusinessServices(this.businessServiceOffering, bsArr, classArr, "up", 0, 1);
+			queryStr +=  "^u_business_serviceIN"+bsArr.join(",");
+			queryStr +=  "^u_business_service_offering="+this.businessServiceOffering;
+			queryStr += "^u_it_service_offering="+this.ITServiceOffering;
+			//}
+					
+		}
+		
+		return queryStr;
+	},
+	
+	getBusinessSerFromServices : function(bUserID) {
+		//The function getServiceSubscribedKnowledge is created for the business rule "Restrict articles for user", because the ORSUBQUERY within that business rule was not working anymore.
+		//This functions returns a list of knowledge articles that the logged in user is entitled through their subscribed service offerings.
+		var serviceOfferings = this.getServiceOfferings(bUserID);
+		var businessServiceList = [];
+		
+		var sO = new GlideRecord("service_offering");
+		sO.addQuery("sys_id","IN",serviceOfferings);
+		sO.query();
+		while(sO.next()){
+			businessServiceList.push(sO.parent.toString());
+		}
+		
+		var businessString = businessServiceList.join(',');
+		return businessString;
+	},
+	
+	getServiceSubscribedKnowledge : function(bUserID) {
+		var subscribedList = [];
+		
+		var ServiceOffering = this.getBusinessSerFromServices(bUserID);
+		
+		var grSKe = new GlideRecord('u_business_service_subscribe_knowledge');
+		grSKe.addQuery('u_business_service_offering','IN', ServiceOffering);
+		grSKe.query();
+		while (grSKe.next()){
+			subscribedList.push(grSKe.u_knowledge.toString());
+		}
+		var subscribedString = subscribedList.join(',');
+		return subscribedString;
+		//end of knowledge customization
+	},
+	
+	_getConfigurationItem : function(cmdb_ci) {
+		var grCI = new GlideRecord("cmdb_ci");
+		if(grCI.get(cmdb_ci)) {
+			return grCI;
+		}
+		return false;
+	},
+	
+	_getBusinessServices : function(parentRecord, soArr, classArr, direction, level, maxDepth) {
+		var parentID = "";
+		var childID = "";
+		var grRel = new GlideRecord("cmdb_rel_ci");
+		grRel.addQuery("type", this.relTypeID);
+		
+		if(direction == "down") {
+			grRel.addQuery("parent", parentRecord);
+			grRel.addQuery("child.sys_class_name", ITGSM_ServiceQualifiers.CLBS);
+			grRel.addQuery("child.install_status", "IN", ITGSM_ServiceQualifiers.INSTBIP);
+		} else {
+			grRel.addQuery("child", parentRecord);
+			grRel.addQuery("parent.sys_class_name", ITGSM_ServiceQualifiers.CLBS);
+			grRel.addQuery("parent.install_status", "IN", ITGSM_ServiceQualifiers.INSTBIP);
+		}
+		grRel.query();
+		while(grRel.next()) {
+			if(direction == "down") {
+				childID = grRel.child.toString();
+				if(this.currentpath.indexOf(childID) == -1) { // Check for circulair relation
+					level++;
+					if(classArr.indexOf(grRel.child.service_classification.toString()) != -1)
+						soArr.push(childID);
+					this.currentpath += "," + childID;
+					if(level < maxDepth) { // Check for maximize level depth
+						soArr = this._getBusinessServices(childID, soArr, classArr, direction, level, maxDepth);
+					}
+				}
+			} else {
+				parentID = grRel.parent.toString();
+				if(this.currentpath.indexOf(parentID) == -1) { // Check for circulair relation
+					level++;
+					if(classArr.indexOf(grRel.parent.service_classification.toString()) != -1)
+						soArr.push(parentID);
+					this.currentpath += "," + parentID;
+					if(level < maxDepth) { // Check for maximize level depth
+						soArr = this._getBusinessServices(parentID, soArr, classArr, direction, level, maxDepth);
+					}
+				}
+			}
+		}
+		return soArr;
+	},
+	
+	_serviceSubscriptionLookUp : function(sTable,sField,oValue) {
+		var answer = [];
+		var grLkp = new GlideRecord(sTable);
+		grLkp.addQuery("service_offering.install_status",ITGSM_ServiceQualifiers.INST);
+		grLkp.addQuery("service_offering.install_status", "IN", ITGSM_ServiceQualifiers.INSTBIP);
+		grLkp.addQuery(sField, oValue);
+		grLkp.query();
+		while (grLkp.next()) {
+			answer.push(grLkp.service_offering.toString());
+		}
+		return answer;
+	},
+	
+	_getRelationshipTypeID : function() {
+		var grRelType = new GlideRecord("cmdb_rel_type");
+		var relTypeID = "";
+		if (grRelType.get("name", ITGSM_ServiceQualifiers.SMRST))
+			relTypeID = grRelType.getUniqueValue();
+		return relTypeID;
+	},
+	
+	_allCIs: function(){
+		return 'u_managingISNOTEMPTY';
+	},
+	
+	_getBusinessServices_REDUX : function(parentRecord, soArr, classArr, direction, level, maxDepth) {
+		var parentID = "";
+		var childID = "";
+		var gaRel = new GlideAggregate("cmdb_rel_ci");
+		var found = this.currentpath.split(','); //list of found items needs to be an array; also - we want to get rid of dependency outside this function
+		var upField, downField;
+		
+		gaRel.addQuery("type", this.relTypeID);
+
+		if (direction == 'down'){
+			upField = 'parent';
+			downField = 'child';
+		} else {
+			upField = 'child';
+			downField = 'parent';
+		}
+		
+		gaRel.addQuery(upField, parentRecord);
+		gaRel.addQuery(downField+".sys_class_name", ITGSM_ServiceQualifiers.CLBS);
+		gaRel.addQuery(downField+".install_status", "IN", ITGSM_ServiceQualifiers.INSTBIP);
+		gaRel.groupBy(downField);
+		gaRel.query();
+
+		while (gaRel.next()){
+			childID = gaRel.getValue(downField);
+			if (found.indexOf(childID) === -1){
+				level++;
+				if(classArr.indexOf(gaRel.child.service_classification.toString()) != -1)
+					soArr.push(childID);
+				found.push(childID);
+				if(level < maxDepth) { // Check for maximize level depth ====> this is recursive and we don't need that !!!
+					soArr = this._getBusinessServices(childID, soArr, classArr, direction, level, maxDepth);
+				}			
+			}
+		}
+
+		return soArr;
+	},	
+	_getBusinessServices_REDUX2: function(parents, soArr, classArr, direction, level, maxDepth) {
+		var parentID = "";
+		var childID = "";
+		var gaRel = new GlideAggregate("cmdb_rel_ci");
+		var found = this.currentpath.split(','); //list of found items needs to be an array; also - we want to get rid of dependency outside this function
+		var upField, downField;
+
+		if (typeof parents === 'string'){
+			parents = [parents];
+		}
+		
+		gaRel.addQuery("type", this.relTypeID);
+
+		if (direction == 'down'){
+			upField = 'parent';
+			downField = 'child';
+		} else {
+			upField = 'child';
+			downField = 'parent';
+		}
+		
+		while (level < maxDepth){
+			gaRel.initialize();
+			gaRel.addQuery(upField, 'IN', parents);
+			gaRel.addQuery(upField, 'NOT IN', found);
+			gaRel.addQuery(downField+".sys_class_name", ITGSM_ServiceQualifiers.CLBS);
+			gaRel.addQuery(downField+".install_status", "IN", ITGSM_ServiceQualifiers.INSTBIP);
+			gaRel.groupBy(downField);
+			gaRel.query();
+
+			parents = [];
+			while (gaRel.next()){
+				childID = gaRel.getValue(downField);
+				if (found.indexOf(childID) === -1){
+					if(classArr.indexOf(gaRel[downField].service_classification.toString()) != -1)
+						found.push(childID);
+					parents.push(childID);
+				}
+			}
+			level++;
+		}
+
+		return soArr;
+	},
+	
+	type: 'ITGSM_ServiceQualifiers'
+};
+
+//
+CmdbTree = Class.create();
+CmdbTree.prototype = {
+	initialize: function(top){
+		this.top = top;
+	}
+}
+
+
+////
+var Node = function(sys_id, data){
+	this.sys_id = sys_id;
+	this.data = data || {}
+	this.children = [];
+	this.parent = null;
+
+	return this;
+}
+
+Node.prototype.setValue = function(key, value){
+	this.data[key] = value;
+
+	return this;
+}
+Node.prototype.addChild = function(node){
+	this.children.push(node);
+	node.parent = this.sys_id;
+
+	return this;
+}
+Node.prototype.getChild = function(i){
+	if (typeof i === 'number' && i >= 0 && i < this.children.length){
+		return this.children[i];
+	} else {
+		return this.children;
+	}
+}
+Node.prototype.getParent = function(){
+	return this.parent;
+}
