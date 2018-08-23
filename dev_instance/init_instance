@@ -1,0 +1,83 @@
+(function(){
+	setupUsers('bert-jan.fransen');
+	setProperties();
+})();
+
+
+function setupUsers(adminUserName){
+/*
+  Description
+    Renames the user named 'admin' to value stored in adminUserName
+	Randomizes the password for all other users (rather than deactivating/locking out, which prevents impersonating)
+
+  Arguments:
+    String adminUserName - admin user wil be renamed to this, if present this name will be skipped
+
+  Returns
+    -
+
+  Uses
+    -
+
+  Version History:
+    b0001 - BJ Fransen, 06-Jan-2017
+	b0002 - BJ Fransen, 20-Aug-2018, running the script a second time is now harmless
+*/ 
+  var grUser = new GlideRecord('sys_user');
+  var userName;
+	
+  grUser.query();
+  while (grUser.next()){
+	userName = grUser.getValue('user_name');
+	if (userName != adminUserName){
+		if (userName == 'admin'){
+		  grUser.setValue('user_name', adminUserName);
+		  grUser.setValue('time_zone', 'Europe/Paris');
+		} else {
+		  grUser.setValue('user_password', randomPassword());
+		}
+
+		grUser.update();
+	}
+  }
+}
+
+
+function randomPassword(length) {
+/*
+  Description
+    Generates a random password consisting of lowercase letters and digits - [a-z0-9]
+    It is set as follows:
+    - Math.random - generates random number (between 0 and 1)
+    - toString(36) - converts the number to a string using base 36 (a-z0-9)
+    - use only first 15 characters to append to result string
+    - repeat until length is reached
+
+  Arguments:
+    Number length [optional] - password length; defaults to 8.
+
+  Returns
+    String - password
+
+  Uses
+    -
+
+  Version History:
+    b0001 - BJ Fransen, 6-Jan-2017
+*/ 
+  var result = '';
+
+  if (typeof length === 'undefined'){
+    length = 8;
+  }
+
+  while (result.length < +length){
+    result += Math.random().toString(36).slice(2, length-1);
+  }
+
+  return result;
+}
+
+function setProperties(){
+	gs.setProperty('glide.ui.session_timeout', 300); //default time out is 30 minutes. Nah.
+}
