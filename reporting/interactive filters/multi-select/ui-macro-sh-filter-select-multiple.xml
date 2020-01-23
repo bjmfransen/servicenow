@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- 
+
+Version 1.0
+20 January 2020
+Bert-Jan Fransen
+
+
+Custom interactive filter macro for choice list fields
+=========================================================================
+
+Description
+Using this macro on a dashboard, users can filter reports on choice list fields. 
+Rather than just update the base table, like the out of the box interactive filter 
+for choice lists does, this macro also updates related tables.
+
+
+Usage
+This macro can be called from a dynamic content block using the following syntax:
+
+    <g:macro_invoke macro="sh-filter-select-multiple" name="ProjectSupplier" parameters="${parameters}"/>
+
+Parameters passed in:
+    - macro = name of this macro
+    - name = provides the macro with an identifier; make this something recognizable
+    - parameters = object containing data to modify the macro's behaviour. This macro currently only accepts a mapping-structure.
+
+    The mapping structure in parameters allows ServiceNow to update the reports on the tables defined in the mapping-structure.
+    For example, parameters looks like this:
+
+    parameters.mapping = {
+      "base": {
+        "table":      "pm_project",
+        "field":      "u_project_supplier"
+      },
+      "references": [{
+        "table":      "project_funding",
+        "reference":  "task.ref_pm_project."
+      }, {
+        "table":      "cost_plan_breakdown",
+        "reference":  "task.ref_pm_project."
+      }, {
+        "table":      "cost_plan",
+        "reference":  "task.ref_pm_project."
+      }]
+    }
+
+    The object contains two parts. First, in base, the table and field are stored on which the filter needs to run. Since this is a choice list 
+    filter, the fields needs to have a choice list related to it.
+
+    Second, the object contains references. The filter updates all reports on pm_project, but also those that run on project funding, cost plan and cost plan breakdown. It also defines the path to go from the table to the base table/field. 
+    More table/field combinations can be added to the references-list. Make sure that the reference provides a path that, when combined with the base field refers to a field on the base table.
+    So, from a cost plan record, you end up on the project supplier by travelling via
+
+        <cost_plan_record>task.ref_pm_project.u_project_supplier
+
+    which is the concatenation of the reference for cost plan and the base field.
+
+ -->
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+    <g:evaluate>
+<!-- Section contains function definitions -->
+function getChoiceOptions(table, field, removeNone){
+/**
+ * Retrieves choice options and returns them as an array of objects,
+ * each object having keys value and label.
+ *
+ * @param {string} table - table name
+ * @param {string} field - field name
+ * @param {boolean} [removeNone] - removes None-option if true (default falsy (undefined))
+ * @return {Array.{label: string, value: string}>}
+ *
+ * @example
+ *
+ *     getChoiceOptions('incident', 'priority', false)
+ */ 
+    var choiceList = GlideScriptChoiceList.getChoiceList(table, field);
+    var result;
+    if (removeNone){
+        choiceList.removeNone();
+    }
+    
+    result = choiceList.toArray().map(function(choice){
+        return {
+            label: choice.getLabel(),
+            value: choice.getValue()
+        }
+    })
+
+    return result;
+}
+
+function configFromMapping(mapping, defaultOptions){
+/**
+ * Converts the mapping provided by the dynamic content block to the config obect
+ * expected by the HomepagePublisherHandler.
+ * The references-array in mappings define the tables and related prefixes to dotwalk from
+ * the reference table to the base table/field.
+ *
+ * @param {Object} mapping - filter mappings
+ * @param {Object} mapping.base - options for the base filter
+ * @param {string} mappings.base.table - base table for the interactive filter
+ * @param {string} mappings.base.field - field on base table for the interactive filter
+ * @param {Array.{table: string, reference: string}>} - list of tables and references
+ * @return {Array.{st: string, sf: string}>}
+ *
+ */
+    var result = mapping.references.map(function(reference){
+        var item = {};
+        var key;
+        
+        for (key in defaultOptions){
+          item[key] = defaultOptions[key];
+        }
+
+        item.st = reference.table;
+        item.sf = reference.reference + mapping.base.field;
+
+        return item;
+    })
+
+    defaultOptions.st = mapping.base.table;
+    defaultOptions.sf = mapping.base.field;
+
+    //put the base object at the beginning of the array
+    result.unshift(defaultOptions);
+
+    return result;
+}
+    </g:evaluate>
+    <g:evaluate>
+<!-- calculate the config object to be passed on to the HomepagePublisherHandler -->
+//set the class name that allows us to identify all occurences of this macro on the dashboard
+var CLASS_NAME = 'sh-select-multiple';
+
+//get the parameters object passed in from the dynamic content
+var parameters = JSON.parse('${jvar_parameters}');
+
+//combine the macro identifier with the names of base table/field - this combination is expected to be unique on a dashboard tab
+var seconds = +new Date();
+var DIV_ID = CLASS_NAME + '-' + parameters.mapping.base.table + '-' + parameters.mapping.base.field;
+
+//calculate the choice options
+var options = getChoiceOptions(parameters.mapping.base.table, parameters.mapping.base.field);
+
+//the third argument to the constructor HomepagePublisherHandler is a JSON string; we set it up here
+var o = {
+    "isPublisher":"true",
+    "filterType":"1"
+}
+
+//convert the mapping from the parameters to a config object
+o.config = configFromMapping(mapping, {
+    "allow_database_view_filter":false,
+    "id":"${jvar_name}",
+    "allow_extended_table":false
+})
+
+var pubConfig = JSON.stringify(o);
+    </g:evaluate>
+    <script type="text/javascript">
+function changeSelect(select){
+    //returns an array with the selected values from the select element
+    var result = [];
+    var options = select ${AMP}${AMP} select.options || [];
+    var i;
+    var l = options.length;
+
+    //push the values of the selected options on the results array
+    //use != to avoid having to escape
+    for (i = 0; i != l; i++) {
+        if (options[i].selected) {
+          result.push(options[i].value || options[i].text);
+        }
+    }
+
+    return result;  
+}       
+    </script>
+    <div id="${DIV_ID}" tabindex="-1" class="grid-stack-item-content ${DIV_ID} " >
+        <div class="grid-widget-content" id="2c79ac5f-182f-4a92-9b86-d514d579b074" style="top: 0px;">
+            <span style="display: none;">IE BUMPER</span>
+            <div class="interactive-filter ${CLASS_NAME}">
+                <select aria-label="Multi Select" id="select_${jvar_name}" class="form-control interactive-filter__form-control select2 widget-content interactive-filter__widget-content select2-offscreen" tabindex="-1" title="" >
+                    <option value="All" selected="selected">All</option>
+                    <j:forEach var="jvar_option" items="${options}">
+                        <option value="${jvar_option.value}" role="option">${jvar_option.label}</option>
+                    </j:forEach>
+                </select>
+                <select aria-label="Incident Priority Multi" id="select_${jvar_name}_multiple" class="form-control interactive-filter__form-control select2 widget-content interactive-filter__widget-content select2-offscreen" multiple="multiple" tabindex="-1" >
+                    <j:forEach var="jvar_option" items="${options}">
+                        <option value="${jvar_option.value}" role="option" >${jvar_option.label}</option>
+                    </j:forEach>
+                </select>   
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // init widget information
+        var ${jvar_name}SelectMultiple = $j("#${DIV_ID}");
+
+        //Get Unique id for publisher in the DashboardMessage
+        var widgetId = ${jvar_name}SelectMultiple.closest(".grid-widget-content")[0].getAttribute("data-original-widget-sysid");
+    </script>
+    <script>
+        if (window.g_ck){
+            $j.ajaxSetup({
+                headers: { 'X-UserToken': window.g_ck }
+            });
+        }
+        var ref = "${jvar_name}";
+        var uiType = 'select_multiple';
+        var pubconfig = "${pubConfig}";
+        var isReferenceFilter = '';
+        var persistence = new InteractiveFilterPersistedValues();
+
+        //handler copied from out of the box interactive filter for choice lists; transforms the select box into 
+        //drop down widget shown on the dashboard.
+        var handler = new HomepagePublisherHandler("${jvar_name}", "select_multiple", "${pubConfig}", isReferenceFilter, persistence)
+    </script>
+</j:jelly>
