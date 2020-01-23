@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+<g:evaluate>
+  var mapping = {
+    "base": {
+      "table":      "pm_project",
+      "field":      "u_project_supplier"
+    },
+    "references": [{
+      "table":      "project_change_request",
+      "reference":  "parent.ref_pm_project."
+    }, {
+      "table":      "resource_plan",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "resource_allocation",
+      "reference":  "resource_plan.task.ref_pm_project."
+    }, {
+      "table":      "risk",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "fm_expense_line",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "project_funding",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "issue",
+      "reference":  "parent.ref_pm_project."
+    }, {
+      "table":      "cost_plan_breakdown",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "cost_plan",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "project_status",
+      "reference":  "project."
+    }]
+  }
+	
+  var parameters = JSON.stringify({
+    mapping: mapping
+  })
+</g:evaluate>
+
+<g:macro_invoke macro="sh-filter-select-multiple" name="ProjectSupplier" parameters="${parameters}"/>
+</j:jelly>
