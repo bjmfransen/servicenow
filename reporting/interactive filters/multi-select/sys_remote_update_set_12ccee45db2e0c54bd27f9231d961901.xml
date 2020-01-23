@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?><unload unload_date="2020-01-23 08:44:16">
+<sys_remote_update_set action="INSERT_OR_UPDATE">
+<application display_value="Global">global</application>
+<application_name>Global</application_name>
+<application_scope>global</application_scope>
+<application_version/>
+<collisions/>
+<commit_date/>
+<deleted/>
+<description>Reference number: STRY0185016
+
+Description:
+38: NEW:Interactive Filter needed to be created: Project Supplier
+As a Project Manager, I want a centralized Dashboard to view all Projects and its corresponding elements in order to have an overview of the entire Project Landscape. One of the attributes I want to filter on is the Project Supplier.
+
+Business Justification:
+PPM team had a PowerBI dashboard built as they were not aware this could be done in ServiceNow.  Currently the The PPM project Delivery dashboard would serve as an overview of the entire Project Delivery Landscape and by having the same in ServiceNow, this would act as the single source of truth for all end users to be able to view the underlying data "real time".
+
+Update:
+Custom interactive filter has been built, consisting of two parts
+1) dynamic content block - contains settings for this particular filter
+2) ui macro that can be reused for other choice list fields.
+The filter has not been added to any dashboard.
+
+Deployment restrictions:
+</description>
+<inserted/>
+<name>SVR  - 185016 Enhancement</name>
+<origin_sys_id/>
+<parent display_value=""/>
+<release_date/>
+<remote_base_update_set display_value=""/>
+<remote_parent_id/>
+<remote_sys_id>91eaff7adb6d0c1081b6fd961d96199a</remote_sys_id>
+<state>loaded</state>
+<summary/>
+<sys_class_name>sys_remote_update_set</sys_class_name>
+<sys_created_by>NLBFRJ</sys_created_by>
+<sys_created_on>2020-01-23 08:44:16</sys_created_on>
+<sys_id>12ccee45db2e0c54bd27f9231d961901</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_updated_by>NLBFRJ</sys_updated_by>
+<sys_updated_on>2020-01-23 08:44:16</sys_updated_on>
+<update_set display_value=""/>
+<update_source display_value=""/>
+<updated/>
+</sys_remote_update_set>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>sys_ui_macro_69ec15d2dbd2c090cf92fda51d9619d3</name>
+<payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="sys_ui_macro"&gt;&lt;sys_ui_macro action="INSERT_OR_UPDATE"&gt;&lt;active&gt;true&lt;/active&gt;&lt;category&gt;general&lt;/category&gt;&lt;description&gt;Custom interactive filter macro for choice list fields&amp;#13;
+=========================================================================&amp;#13;
+&amp;#13;
+Description&amp;#13;
+Using this macro on a dashboard, users can filter reports on choice list fields. &amp;#13;
+Rather than just update the base table, like the out of the box interactive filter &amp;#13;
+for choice lists does, this macro also updates related tables.&amp;#13;
+&amp;#13;
+&amp;#13;
+Usage&amp;#13;
+This macro can be called from a dynamic content block using the following syntax:&amp;#13;
+&amp;#13;
+    &amp;lt;g:macro_invoke macro="sh-filter-select-multiple" name="ProjectSupplier" parameters="${parameters}"/&amp;gt;&amp;#13;
+&amp;#13;
+Parameters passed in:&amp;#13;
+    - macro = name of this macro&amp;#13;
+    - name = provides the macro with an identifier; make this something recognizable&amp;#13;
+    - parameters = object containing data to modify the macro's behaviour. This macro currently only accepts a mapping-structure.&amp;#13;
+&amp;#13;
+    The mapping structure in parameters allows ServiceNow to update the reports on the tables defined in the mapping-structure.&amp;#13;
+    For example, parameters looks like this:&amp;#13;
+&amp;#13;
+    parameters.mapping = {&amp;#13;
+      "base": {&amp;#13;
+        "table":      "pm_project",&amp;#13;
+        "field":      "u_project_supplier"&amp;#13;
+      },&amp;#13;
+      "references": [{&amp;#13;
+        "table":      "project_funding",&amp;#13;
+        "reference":  "task.ref_pm_project."&amp;#13;
+      }, {&amp;#13;
+        "table":      "cost_plan_breakdown",&amp;#13;
+        "reference":  "task.ref_pm_project."&amp;#13;
+      }, {&amp;#13;
+        "table":      "cost_plan",&amp;#13;
+        "reference":  "task.ref_pm_project."&amp;#13;
+      }]&amp;#13;
+    }&amp;#13;
+&amp;#13;
+    The object contains two parts. First, in base, the table and field are stored on which the filter needs to run. Since this is a choice list &amp;#13;
+    filter, the fields needs to have a choice list related to it.&amp;#13;
+&amp;#13;
+    Second, the object contains references. The filter updates all reports on pm_project, but also those that run on project funding, cost plan and cost plan breakdown. It also defines the path to go from the table to the base table/field. &amp;#13;
+    More table/field combinations can be added to the references-list. Make sure that the reference provides a path that, when combined with the base field refers to a field on the base table.&amp;#13;
+    So, from a cost plan record, you end up on the project supplier by travelling via&amp;#13;
+&amp;#13;
+        &amp;lt;cost_plan_record&amp;gt;task.ref_pm_project.u_project_supplier&amp;#13;
+&amp;#13;
+    which is the concatenation of the reference for cost plan and the base field.&lt;/description&gt;&lt;media_type/&gt;&lt;name&gt;sh-filter-select-multiple&lt;/name&gt;&lt;scoped_name/&gt;&lt;sys_class_name&gt;sys_ui_macro&lt;/sys_class_name&gt;&lt;sys_created_by&gt;NLBFRJ&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2020-01-14 13:52:20&lt;/sys_created_on&gt;&lt;sys_customer_update&gt;false&lt;/sys_customer_update&gt;&lt;sys_id&gt;69ec15d2dbd2c090cf92fda51d9619d3&lt;/sys_id&gt;&lt;sys_mod_count&gt;10&lt;/sys_mod_count&gt;&lt;sys_name&gt;sh-filter-select-multiple&lt;/sys_name&gt;&lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;&lt;sys_policy/&gt;&lt;sys_replace_on_upgrade&gt;false&lt;/sys_replace_on_upgrade&gt;&lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;&lt;sys_update_name&gt;sys_ui_macro_69ec15d2dbd2c090cf92fda51d9619d3&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;NLBFRJ&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2020-01-20 13:16:26&lt;/sys_updated_on&gt;&lt;xml&gt;&lt;![CDATA[&lt;?xml version="1.0" encoding="utf-8" ?&gt;
+&lt;!-- 
+
+Version 1.0
+20 January 2020
+Bert-Jan Fransen
+
+
+Custom interactive filter macro for choice list fields
+=========================================================================
+
+Description
+Using this macro on a dashboard, users can filter reports on choice list fields. 
+Rather than just update the base table, like the out of the box interactive filter 
+for choice lists does, this macro also updates related tables.
+
+
+Usage
+This macro can be called from a dynamic content block using the following syntax:
+
+    &lt;g:macro_invoke macro="sh-filter-select-multiple" name="ProjectSupplier" parameters="${parameters}"/&gt;
+
+Parameters passed in:
+    - macro = name of this macro
+    - name = provides the macro with an identifier; make this something recognizable
+    - parameters = object containing data to modify the macro's behaviour. This macro currently only accepts a mapping-structure.
+
+    The mapping structure in parameters allows ServiceNow to update the reports on the tables defined in the mapping-structure.
+    For example, parameters looks like this:
+
+    parameters.mapping = {
+      "base": {
+        "table":      "pm_project",
+        "field":      "u_project_supplier"
+      },
+      "references": [{
+        "table":      "project_funding",
+        "reference":  "task.ref_pm_project."
+      }, {
+        "table":      "cost_plan_breakdown",
+        "reference":  "task.ref_pm_project."
+      }, {
+        "table":      "cost_plan",
+        "reference":  "task.ref_pm_project."
+      }]
+    }
+
+    The object contains two parts. First, in base, the table and field are stored on which the filter needs to run. Since this is a choice list 
+    filter, the fields needs to have a choice list related to it.
+
+    Second, the object contains references. The filter updates all reports on pm_project, but also those that run on project funding, cost plan and cost plan breakdown. It also defines the path to go from the table to the base table/field. 
+    More table/field combinations can be added to the references-list. Make sure that the reference provides a path that, when combined with the base field refers to a field on the base table.
+    So, from a cost plan record, you end up on the project supplier by travelling via
+
+        &lt;cost_plan_record&gt;task.ref_pm_project.u_project_supplier
+
+    which is the concatenation of the reference for cost plan and the base field.
+
+ --&gt;
+&lt;j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null"&gt;
+    &lt;g:evaluate&gt;
+&lt;!-- Section contains function definitions --&gt;
+function getChoiceOptions(table, field, removeNone){
+/**
+ * Retrieves choice options and returns them as an array of objects,
+ * each object having keys value and label.
+ *
+ * @param {string} table - table name
+ * @param {string} field - field name
+ * @param {boolean} [removeNone] - removes None-option if true (default falsy (undefined))
+ * @return {Array.{label: string, value: string}&gt;}
+ *
+ * @example
+ *
+ *     getChoiceOptions('incident', 'priority', false)
+ */ 
+    var choiceList = GlideScriptChoiceList.getChoiceList(table, field);
+    var result;
+    if (removeNone){
+        choiceList.removeNone();
+    }
+    
+    result = choiceList.toArray().map(function(choice){
+        return {
+            label: choice.getLabel(),
+            value: choice.getValue()
+        }
+    })
+
+    return result;
+}
+
+function configFromMapping(mapping, defaultOptions){
+/**
+ * Converts the mapping provided by the dynamic content block to the config obect
+ * expected by the HomepagePublisherHandler.
+ * The references-array in mappings define the tables and related prefixes to dotwalk from
+ * the reference table to the base table/field.
+ *
+ * @param {Object} mapping - filter mappings
+ * @param {Object} mapping.base - options for the base filter
+ * @param {string} mappings.base.table - base table for the interactive filter
+ * @param {string} mappings.base.field - field on base table for the interactive filter
+ * @param {Array.{table: string, reference: string}&gt;} - list of tables and references
+ * @return {Array.{st: string, sf: string}&gt;}
+ *
+ */
+    var result = mapping.references.map(function(reference){
+        var item = {};
+        var key;
+        
+        for (key in defaultOptions){
+          item[key] = defaultOptions[key];
+        }
+
+        item.st = reference.table;
+        item.sf = reference.reference + mapping.base.field;
+
+        return item;
+    })
+
+    defaultOptions.st = mapping.base.table;
+    defaultOptions.sf = mapping.base.field;
+
+    //put the base object at the beginning of the array
+    result.unshift(defaultOptions);
+
+    return result;
+}
+    &lt;/g:evaluate&gt;
+    &lt;g:evaluate&gt;
+&lt;!-- calculate the config object to be passed on to the HomepagePublisherHandler --&gt;
+//set the class name that allows us to identify all occurences of this macro on the dashboard
+var CLASS_NAME = 'sh-select-multiple';
+
+//get the parameters object passed in from the dynamic content
+var parameters = JSON.parse('${jvar_parameters}');
+
+//combine the macro identifier with the names of base table/field - this combination is expected to be unique on a dashboard tab
+var seconds = +new Date();
+var DIV_ID = CLASS_NAME + '-' + parameters.mapping.base.table + '-' + parameters.mapping.base.field;
+
+//calculate the choice options
+var options = getChoiceOptions(parameters.mapping.base.table, parameters.mapping.base.field);
+
+//the third argument to the constructor HomepagePublisherHandler is a JSON string; we set it up here
+var o = {
+    "isPublisher":"true",
+    "filterType":"1"
+}
+
+//convert the mapping from the parameters to a config object
+o.config = configFromMapping(mapping, {
+    "allow_database_view_filter":false,
+    "id":"${jvar_name}",
+    "allow_extended_table":false
+})
+
+var pubConfig = JSON.stringify(o);
+    &lt;/g:evaluate&gt;
+    &lt;script type="text/javascript"&gt;
+function changeSelect(select){
+    //returns an array with the selected values from the select element
+    var result = [];
+    var options = select ${AMP}${AMP} select.options || [];
+    var i;
+    var l = options.length;
+
+    //push the values of the selected options on the results array
+    //use != to avoid having to escape
+    for (i = 0; i != l; i++) {
+        if (options[i].selected) {
+          result.push(options[i].value || options[i].text);
+        }
+    }
+
+    return result;  
+}       
+    &lt;/script&gt;
+    &lt;div id="${DIV_ID}" tabindex="-1" class="grid-stack-item-content ${DIV_ID} " &gt;
+        &lt;div class="grid-widget-content" id="2c79ac5f-182f-4a92-9b86-d514d579b074" style="top: 0px;"&gt;
+            &lt;span style="display: none;"&gt;IE BUMPER&lt;/span&gt;
+            &lt;div class="interactive-filter ${CLASS_NAME}"&gt;
+                &lt;select aria-label="Multi Select" id="select_${jvar_name}" class="form-control interactive-filter__form-control select2 widget-content interactive-filter__widget-content select2-offscreen" tabindex="-1" title="" &gt;
+                    &lt;option value="All" selected="selected"&gt;All&lt;/option&gt;
+                    &lt;j:forEach var="jvar_option" items="${options}"&gt;
+                        &lt;option value="${jvar_option.value}" role="option"&gt;${jvar_option.label}&lt;/option&gt;
+                    &lt;/j:forEach&gt;
+                &lt;/select&gt;
+                &lt;select aria-label="Incident Priority Multi" id="select_${jvar_name}_multiple" class="form-control interactive-filter__form-control select2 widget-content interactive-filter__widget-content select2-offscreen" multiple="multiple" tabindex="-1" &gt;
+                    &lt;j:forEach var="jvar_option" items="${options}"&gt;
+                        &lt;option value="${jvar_option.value}" role="option" &gt;${jvar_option.label}&lt;/option&gt;
+                    &lt;/j:forEach&gt;
+                &lt;/select&gt;   
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+
+    &lt;script&gt;
+        // init widget information
+        var ${jvar_name}SelectMultiple = $j("#${DIV_ID}");
+
+        //Get Unique id for publisher in the DashboardMessage
+        var widgetId = ${jvar_name}SelectMultiple.closest(".grid-widget-content")[0].getAttribute("data-original-widget-sysid");
+    &lt;/script&gt;
+    &lt;script&gt;
+        if (window.g_ck){
+            $j.ajaxSetup({
+                headers: { 'X-UserToken': window.g_ck }
+            });
+        }
+        var ref = "${jvar_name}";
+        var uiType = 'select_multiple';
+        var pubconfig = "${pubConfig}";
+        var isReferenceFilter = '';
+        var persistence = new InteractiveFilterPersistedValues();
+
+        //handler copied from out of the box interactive filter for choice lists; transforms the select box into 
+        //drop down widget shown on the dashboard.
+        var handler = new HomepagePublisherHandler("${jvar_name}", "select_multiple", "${pubConfig}", isReferenceFilter, persistence)
+    &lt;/script&gt;
+&lt;/j:jelly&gt;]]&gt;&lt;/xml&gt;&lt;/sys_ui_macro&gt;&lt;/record_update&gt;</payload>
+<payload_hash>150173247</payload_hash>
+<remote_update_set display_value="SVR  - 185016 Enhancement">12ccee45db2e0c54bd27f9231d961901</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>NLBFRJ</sys_created_by>
+<sys_created_on>2020-01-23 08:44:16</sys_created_on>
+<sys_id>5eccee45db2e0c54bd27f9231d961901</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>16fc318e49e0000001</sys_recorded_at>
+<sys_updated_by>NLBFRJ</sys_updated_by>
+<sys_updated_on>2020-01-23 08:44:16</sys_updated_on>
+<table/>
+<target_name>sh-filter-select-multiple</target_name>
+<type>Macro</type>
+<u_story/>
+<update_domain>global</update_domain>
+<update_guid>374e80dc342ac4541426e945553ffc99</update_guid>
+<update_guid_history>374e80dc342ac4541426e945553ffc99:150173247,213e889cc42ac454ccdd1450a32f3a3b:674048065,92fd80dc552ac454dde935061ef5ae11:1291141633,c883449c18e6c4541f9e63c3c24ac6a6:-220309363,7dcbfd12e296c090efec16fe0eca4772:-824933452,7e18f1521b96c090724de8c36cf6ba96:-1510749876,78b4bd9add56c090a15bdb756fc7b196:1764264058,a084759a6e56c090e386dc95ba558f42:1299698463,59cfed921556c090642f57292a864e1a:-737206625,fc8d95d275d2c090c7065ec661957f3c:1944063972,dbfc11d227d2c0905715d57b10baeaf4:795567701</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application display_value="Global">global</application>
+<category>customer</category>
+<comments/>
+<name>content_block_programmatic_4fa38ccfdbad0c1081b6fd961d96196e</name>
+<payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update table="content_block_programmatic"&gt;&lt;content_block_programmatic action="INSERT_OR_UPDATE"&gt;&lt;active&gt;true&lt;/active&gt;&lt;category&gt;general&lt;/category&gt;&lt;condition/&gt;&lt;conditional&gt;false&lt;/conditional&gt;&lt;frame/&gt;&lt;logged_on&gt;false&lt;/logged_on&gt;&lt;name&gt;Filter - Project Supplier&lt;/name&gt;&lt;programmatic_content&gt;&lt;![CDATA[&lt;?xml version="1.0" encoding="utf-8" ?&gt;
+&lt;j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null"&gt;
+&lt;g:evaluate&gt;
+  var mapping = {
+    "base": {
+      "table":      "pm_project",
+      "field":      "u_project_supplier"
+    },
+    "references": [{
+      "table":      "project_change_request",
+      "reference":  "parent.ref_pm_project."
+    }, {
+      "table":      "resource_plan",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "resource_allocation",
+      "reference":  "resource_plan.task.ref_pm_project."
+    }, {
+      "table":      "risk",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "fm_expense_line",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "project_funding",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "issue",
+      "reference":  "parent.ref_pm_project."
+    }, {
+      "table":      "cost_plan_breakdown",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "cost_plan",
+      "reference":  "task.ref_pm_project."
+    }, {
+      "table":      "project_status",
+      "reference":  "project."
+    }]
+  }
+	
+  var parameters = JSON.stringify({
+    mapping: mapping
+  })
+&lt;/g:evaluate&gt;
+
+&lt;g:macro_invoke macro="sh-filter-select-multiple" name="ProjectSupplier" parameters="${parameters}"/&gt;
+&lt;/j:jelly&gt;]]&gt;&lt;/programmatic_content&gt;&lt;sys_class_name&gt;content_block_programmatic&lt;/sys_class_name&gt;&lt;sys_created_by&gt;NLBFRJ&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2019-12-10 08:30:26&lt;/sys_created_on&gt;&lt;sys_customer_update&gt;false&lt;/sys_customer_update&gt;&lt;sys_id&gt;4fa38ccfdbad0c1081b6fd961d96196e&lt;/sys_id&gt;&lt;sys_mod_count&gt;9&lt;/sys_mod_count&gt;&lt;sys_name&gt;Filter - Project Supplier&lt;/sys_name&gt;&lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;&lt;sys_policy/&gt;&lt;sys_replace_on_upgrade&gt;false&lt;/sys_replace_on_upgrade&gt;&lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;&lt;sys_update_name&gt;content_block_programmatic_4fa38ccfdbad0c1081b6fd961d96196e&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;NLBFRJ&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2020-01-20 12:55:23&lt;/sys_updated_on&gt;&lt;two_phase&gt;false&lt;/two_phase&gt;&lt;/content_block_programmatic&gt;&lt;/record_update&gt;</payload>
+<payload_hash>294587925</payload_hash>
+<remote_update_set display_value="SVR  - 185016 Enhancement">12ccee45db2e0c54bd27f9231d961901</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<sys_created_by>NLBFRJ</sys_created_by>
+<sys_created_on>2020-01-23 08:44:16</sys_created_on>
+<sys_id>96ccee45db2e0c54bd27f9231d961901</sys_id>
+<sys_mod_count>0</sys_mod_count>
+<sys_recorded_at>16fc305a2130000001</sys_recorded_at>
+<sys_updated_by>NLBFRJ</sys_updated_by>
+<sys_updated_on>2020-01-23 08:44:16</sys_updated_on>
+<table/>
+<target_name>Filter - Project Supplier</target_name>
+<type>Dynamic Content</type>
+<u_story/>
+<update_domain>global</update_domain>
+<update_guid>e379c8d42f2ac45457363794559adf48</update_guid>
+<update_guid_history>e379c8d42f2ac45457363794559adf48:294587925,e6378454fb2ac454606ad433d9295752:1910719415,b17408107a2ac454398728921f8e04e5:2039203831,25b6f59ef256c09051a70018b06a9550:-2058148801,0f74751ac856c0906fc63d27a23727cc:-1359782733,52e031567f56c0909bcb58e2229834a2:334811143,0e7e61120056c0903dfaf3d9984df4ee:923703710,649d65ded716c090f04eb817077c17d3:-1719387190,b9d029c152520c5012b6b21c064db11f:923703710,83002dc15f520c501e5c9be0d4eee538:-1801803721,b244008381ed0c101298df95583eab76:-1293027928,83a38ccfd6ad0c10821e55583584cd70:-1778181681</update_guid_history>
+<update_set display_value=""/>
+<view/>
+</sys_update_xml>
+</unload>
