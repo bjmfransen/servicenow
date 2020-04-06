@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+<g:evaluate>
+/****************************************************************************************/
+/* 
+/* The interactive filter consists of two parts: a dynamic content block and a ui macro.
+/* The dynamic content block provides the labels and values of the radio buttons, which
+/* in turn are shown by the macro. 
+/* 
+/* This dynamic content block contains data that is specific for top project radio buttons.
+/* All that data is part of a parameters-object, that is passed on to the macro. 
+/* The parameters object consists of two parts: mapping and settings.
+/* 
+/* 
+/* 
+/* The mapping structure contains the table/field the filter needs to work on, in the object
+/* called base:
+/* 
+/* parameters.mapping.base.table
+/* parameters.mapping.base.field
+/* 
+/* This part of the data is mandatory for the interactive filter to work.
+/* Optionally, references can be included. The base filter works on the u_top_project-field
+/* on the table pm_project, but the references-array in the parameters object
+/* provides the opportunity to have this filter also work on tables related to pm_project,
+/* such as project_funding, cost_plan_breakdown etc. All that is needed for this is a
+/* table name and a dotwalk-path showing how to travel from the reference table to the base
+/* field on the base table.
+/* 
+/****************************************************************************************/
+	var mapping = new sh_CustomFilterMappings().getMappings('pm_project', 'u_top_project');
+	
+
+/****************************************************************************************/
+/* 
+/* The settings part of the parameters-object most importantly
+/* contains the data needed to construct the radio buttons. Since the order
+/* is important, this is an array. Each element contains the data needed to
+/* set up a single radio button, which is at least:
+/* 
+/* - label - text shown next to the radio button
+/* - value - unique identifier for the radio button element
+/* 
+/* If nothing else is provided, the filter that is run will match the value
+/* with the base field from the mapping above. E.g. if the first radio
+/* button from this list is selected, the following base filter will be
+/* constructed and run on pm_project:
+/* 
+/* 	u_top_project=true
+/* 
+/* This default behaviour can be overruled by two settings. 
+/* First, if the attribute noFilter is provided and set to true, this option will
+/* cause no filter to be added. So if the radio button labeled 'All' is selected,
+/* meaning projects for which u_top_project is set either to false or to true,
+/* the noFilter attribute will cause no filter to be run on the u_top_project-field.
+/* 
+/* Secondly, it is possible to provide a custom filter - although this will not
+/* run if noFilter is set to true. This feature is not used here.
+/* 
+/****************************************************************************************/
+	var radioButtons = [{
+		value: 'all', 
+		label: 'All projects',
+		filter: 'u_top_projectANYTHING'
+	},{
+		value: 'true',
+		label: 'Top projects'
+	},{
+		value: 'false',
+		label: 'Not top projects'
+	}]
+
+	var settings = {
+		type: 'radio-button',
+		radioButtons: radioButtons
+	}
+	
+	// to pass the parameters object to the macro, it needs to be converted to a string
+	var parameters = JSON.stringify({
+		mapping: mapping,
+		settings: settings
+	})
+</g:evaluate>
+<!-- 
+Call the ui macro using three parameters:
+- name = sh-filter-radio-buttons : name of the macro to be called
+- name = TopProject - uniquely identifies the radio buttons, is used as 'name' in the html
+- parameters - stringified representation of the parameters object
+ -->
+
+<g:macro_invoke macro="sh-filter-radio-buttons" name="TopProject" parameters="${parameters}"/>
+
+</j:jelly>
