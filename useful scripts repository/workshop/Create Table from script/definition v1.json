@@ -1,0 +1,45 @@
+[{
+  name: "u_journal_entry",
+  label: "JournalEntry",
+  fields: [{
+    name: "sys_id",
+    type: "string"
+  },{
+    name: "u_number"
+    label: "Number",
+    type: "string"
+  },{
+    name: "u_expense_line",
+    label: "Expense line",
+    type:  "reference"
+  },{
+    name: "u_ledger",
+    label: "Ledger",
+    type: "string"
+  },{
+    name: "u_cost_center",
+    label: "Cost center",
+    type: "string"
+  },{
+    name: "u_csv_export_on",
+    label: "CSV export on",
+    type: "datetime"
+  },{
+    name: "u_invoice",
+    label: "Invoice",
+    type: "reference"
+  },{
+    name: "u_amount",
+    label: "Amount",
+    type: "currency"
+},{
+  name: "u_invoice",
+  label: "Invoice",
+  fields: [{
+    name: "sys_id",
+    type: "string"
+  },{
+    name: "u_number",
+    label: "Number",
+    type: "string"
+}]

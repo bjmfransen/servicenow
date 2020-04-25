@@ -28,8 +28,20 @@
 /* field on the base table.
 /* 
 /****************************************************************************************/
-	var mapping = new sh_CustomFilterMappings().getMappings('pm_project', 'u_top_project');
-	
+	//var mapping = new sh_CustomFilterMappings().getMappings('pm_project', 'u_top_project');
+	var mapping = {
+		"base": {
+			"table":		"pm_project",
+			"field":		"u_top_project"
+		},
+		"references": [{
+			"table":		"project_change_request",
+			"reference":	"parent.ref_pm_project."
+		}, {
+			"table":		"resource_plan",
+			"reference":	"task.ref_pm_project."
+		}]
+	}
 
 /****************************************************************************************/
 /* 
@@ -88,6 +100,6 @@ Call the ui macro using three parameters:
 - parameters - stringified representation of the parameters object
  -->
 
-<g:macro_invoke macro="sh-filter-radio-buttons" name="TopProject" parameters="${parameters}"/>
+<g:macro_invoke macro="dynamic-dashboard-filter" name="TopProject" parameters="${parameters}"/>
 
 </j:jelly>

@@ -19,8 +19,8 @@ takes care of the following:
 The macro also contains css.
 
 -->
-  <g:evaluate>
-  	<!-- 
+	<g:evaluate>
+<!-- 
 
 On the server side, a unique id for this radio buttons element is created. 
 This is needed to prevent interference in case multiple radio button-elements are 
@@ -34,7 +34,7 @@ After selecting a different option that value will be stored as a user preferenc
 
 Finally, the object is converted to a JSON string which is sent to the client.
 
-  	 -->
+		 -->
 	//retrieve the parameters object and convert it to a json object
 	var stringParameters = '${jvar_parameters}';
 	var parameters = JSON.parse(stringParameters);
@@ -47,33 +47,42 @@ Finally, the object is converted to a JSON string which is sent to the client.
 	//find the user preferences; set to default values if not found
 	parameters.settings.preference = gs.getUser().getPreference(uniqueId) || 'noValueYet';
 	stringParameters = JSON.stringify(parameters);
-  </g:evaluate>
+	</g:evaluate>
 
- <div id="${uniqueId}" class="filter-wrapper" >
-	<ul class="no-bullets">
-		<j:forEach var="jvar_radio_button" items="${parameters.settings.radioButtons}" indexVar="jvar_i">
-			<li>
-				<label for="${uniqueId}-${jvar_i}">
-		  			<input type="radio" id="${uniqueId}-${jvar_i}" name="${jvar_name}" value="${jvar_radio_button.value}" filter="${jvar_radio_button.filter}">${jvar_radio_button.label}</input>
-		  		</label>
-			</li>
-		</j:forEach>
-	</ul>
-</div>
+	<div id="${uniqueId}" class="filter-wrapper" >
+		<j:choose>
+			<j:when test="${parameters.settings.type == 'radio-button'}">
+				<ul class="no-bullets">
+					<j:forEach var="jvar_radio_button" items="${parameters.settings.radioButtons}" indexVar="jvar_i">
+						<li>
+							<label for="${uniqueId}-${jvar_i}">
+									<input type="radio" id="${uniqueId}-${jvar_i}" name="${jvar_name}" value="${jvar_radio_button.value}" filter="${jvar_radio_button.filter}">${jvar_radio_button.label}</input>
+								</label>
+						</li>
+					</j:forEach>
+				</ul>				
+			</j:when>
+			<j:otherwise>Invalid type provided.</j:otherwise>
+		</j:choose>
+	</div>
 
-  <style>
+ 
+
+
+
+	<style>
 .no-bullets {
 	list-style-type: none;
 	padding-inline-start: 20px;
 }
-  </style>
+	</style>
 
-  <script language="javascript" src="shFilterRadioButton.jsdbx" />
-  
-  <script>
+	<script language="javascript" src="dynamicDashboardFilters.jsdbx" />
+	
+	<script>
 	// convert string data from the dynamic content block back to an object
 	var parameters = JSON.parse('${stringParameters}');
 	initializeRadioButtons(document, '${uniqueId}', parameters)
-  </script>
-</j:jelly>    
+	</script>
+</j:jelly>		
 
