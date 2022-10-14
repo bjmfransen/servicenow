@@ -1,0 +1,116 @@
+var __ServiceCatalog = Class.create();
+__ServiceCatalog.prototype = {
+    initialize: function(catalogItemId){
+        this.catalogItemId = catalogItemId;
+        this.variableValues = {}
+        this.translateVariables = {};
+    },
+    
+    setVariable: function(variableName, value, field){
+        var values = {
+            variableName: variableName,
+            value: value
+        }
+
+        // instead of a sys_id, the value of another unique field in the referenced
+        // table can be provided. if this field is present in the arguments,
+        // the referenced table for that variable will be queried using the
+        // field and its value. for now, these field's data will be stored in the 
+        // translateVariables object, to be processed later
+        if (typeof field === 'string'){
+            values.field = field;
+            this.translateVariables[values.variableName] = {
+                value: values.value,
+                field: values.field
+            };
+        } else {
+            this.variableValues[values.variableName] = values.value;
+        }
+        return this;
+    },
+    
+    create: function(){      
+        var cartItemData = this.getCartItemData();
+        var cart = new sn_sc.CartJS('__ServiceCatalog Cart');
+        var cartDetails = cart.addToCart(cartItemData);
+        var checkoutInfo = cart.checkoutCart();
+    
+        return checkoutInfo;
+    },
+
+    getCartItemData: function(){
+        var cartItemData = {
+            sysparm_id: this.catalogItemId,
+            sysparm_quantity: '1',
+            variables: {}
+        };
+
+        this.translate();
+
+        for (variableName in this.variableValues){
+            cartItemData.variables[variableName] = this.variableValues[variableName];
+        };
+
+        return cartItemData;
+    },
+    
+    translate: function(){
+        var variableNames = Object.keys(this.translateVariables);
+        var grVariable = this.getVariablesCursor(variableNames);
+
+        while (grVariable.next()){
+            gs.info(grVariable.getValue('name'))
+            this.addVariable(grVariable);
+        }
+
+        return this;
+    },
+    
+    getVariableSets: function() {
+        // returns array with the sys_ids of the variable sets related to the catalog item
+        var result = [];
+        var grIoSetItem = new GlideRecord('io_set_item');
+        grIoSetItem.addQuery('sc_cat_item', this.catalogItemId);
+        grIoSetItem.query();
+
+        while (grIoSetItem.next()) {
+            result.push(grIoSetItem.getValue('variable_set'));
+        }
+
+        return result;
+    },
+
+    getVariablesCursor: function(variableNames) {
+        // finds the reference table referred to by variableName
+        var grVariable = new GlideRecord('item_option_new');
+        var variableSets = this.getVariableSets(this.catalogItemId);
+        grVariable.addQuery('cat_item', this.catalogItemId).addOrCondition('variable_set', 'IN', variableSets);
+        grVariable.addQuery('name', variableNames);
+        grVariable.query();
+
+        return grVariable;
+    },
+    
+    addVariable: function(grVariable){
+        var name = grVariable.getValue('name');
+        var value = this.translateVariables[name].value;
+        var field = this.translateVariables[name].field;
+        var table = grVariable.getValue('reference');
+
+        if (table){
+            var gr = new GlideRecord(table);
+            if (gr.get(field, value)){
+                this.variableValues[name] = gr.getValue('sys_id');
+            }
+        }
+
+        return this;
+    },
+	
+	test: function(){
+		new __ServiceCatalog('4123d8292fe65d10f0b8235df699b6d9')
+			.setVariable('group', 'Database', 'name')
+			.setVariable('user', 'abel.tuter', 'user_name')
+			.create()
+	}
+}
